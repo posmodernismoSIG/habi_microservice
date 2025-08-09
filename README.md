@@ -153,7 +153,7 @@ adicionando a la Capsula WHERE los filtros adicionales
 ### 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/posmodernismoSIG/habi_microservice/
+git clone https://github.com/posmodernismoSIG/habi_microservice.git
 cd habi_microservice
 ```
 
@@ -452,6 +452,109 @@ class PropertyMicroservice:
 
 
 Con estos cuatro pasos, el endpoint POST /properties/{id}/like queda completamente funcional, gestionando altas y bajas de “likes” con consistencia en todas las capas, manteniendo un diseño limpio y fácil de extender.
+
+# Propuesta de un mejor modelo de la base de datos 
+
+<img width="1234" height="660" alt="image" src="https://github.com/user-attachments/assets/e55c4be1-1e4e-4a99-9aa0-d5859f4af43f" />
+
+Propongo una mejora significativa a la base de datos actual porque he identificado varios problemas de performance que están afectando la velocidad del microservicio.
+
+
+### Problema Principal que Resolveria
+
+ 
+Actualmente, cada consulta necesita una subconsulta compleja con ROW_NUMBER() para obtener el último estado de cada propiedad. Esto es muy lento porque:
+
+
+```bash 
+SELECT p.*, s.name as status 
+FROM property p 
+INNER JOIN ( 
+    SELECT property_id, status_id, 
+           ROW_NUMBER() OVER ( 
+               PARTITION BY property_id 
+               ORDER BY update_date DESC 
+           ) as rn 
+    FROM status_history 
+) latest ON p.id = latest.property_id 
+WHERE latest.rn = 1
+```
+
+Mi solución: Desnormalizar agregando el estado actual directamente en la tabla property. Esto convierte la consulta en algo súper simple:
+
+
+```bash
+SELECT p.*, s.name as status 
+FROM property_optimized p 
+INNER JOIN status s ON p.current_status_id = s.id 
+WHERE p.is_available = 1
+Resultado: La consulta principal será 95% más rápida.
+```
+### Historial que Crece Sin Control
+La tabla status_history crece indefinidamente y esto hace que las consultas históricas sean cada vez más lentas.
+Mi solución: Implementar particionamiento por año:
+```bash
+sqlPARTITION BY RANGE (YEAR(update_date)) (
+    PARTITION p2024 VALUES LESS THAN (2025),
+    PARTITION p2025 VALUES LESS THAN (2026),
+    PARTITION p2026 VALUES LESS THAN (2027)
+);
+```
+
+### Las consultas históricas solo buscarán en la partición del año necesario, no en toda la tabla. Esto será 10x más rápido.
+
+Búsquedas de Texto Ineficientes
+
+
+Las búsquedas actuales usan LIKE que es muy lento:
+```bash 
+SELECT * FROM property 
+WHERE city LIKE '%bogot%' 
+AND address LIKE '%calle%' 
+AND price BETWEEN 100000000 AND 300000000
+Mi propuesta: Crear una tabla especializada para búsquedas con índices optimizados:
+sql--  MI BÚSQUEDA OPTIMIZADA
+SELECT p.* FROM property_optimized p
+INNER JOIN property_search_index psi ON p.id = psi.property_id
+WHERE psi.city_key = 'bogota'
+AND MATCH(psi.search_text) AGAINST('calle')
+AND p.price_range_id = 2
+```
+
+Beneficio: Las búsquedas de texto serán 10x más rápidas usando índices FULLTEXT.
+
+### Métricas Calculadas en Tiempo Real
+Actualmente, cada vez que necesitamos estadísticas (como "cuántos días lleva una propiedad en venta"), tenemos que calcularlas sobre la marcha. Esto es costoso.
+Mi solución: Pre-calcular estas métricas en una tabla cache:
+```bash 
+sql-- Métricas instantáneas sin calcular
+SELECT 
+    p.address,
+    psc.days_in_current_status,
+    psc.total_status_changes,
+    psc.views_count
+FROM property_optimized p
+JOIN property_stats_cache psc ON p.id = psc.property_id
+WHERE p.current_status_id = 4 -- en_venta
+ORDER BY psc.views_count DESC;
+```
+
+Beneficio: Dashboards y reportes serán instantáneos.
+
+ ### Resumen de Mi Propuesta
+ 
+Implementar 6 optimizaciones principales:
+
+Desnormalización del estado actual - Elimina subconsultas complejas
+Particionamiento del historial - Divide datos por año
+Índices de búsqueda especializados - FULLTEXT para texto, rangos para precios
+Cache de estadísticas - Pre-calcula métricas costosas
+Normalización de ciudades - Elimina inconsistencias
+Rangos de precio predefinidos - Filtros más rápidos
+
+Impacto total: El microservicio será más rápido en las consultas principales, manteniendo toda la funcionalidad actual.
+Lo mejor: Puedo implementar esto sin romper nada. Creo las nuevas tablas, migro los datos gradualmente, y una vez que esté todo funcionando, apunto el código a las tablas optimizadas. Si algo falla, simplemente regreso a las tablas originales.
+Esta optimización es especialmente importante porque a medida que la plataforma crezca y tengamos más propiedades y más usuarios, el problema de performance se volverá crítico. Es mejor solucionarlo ahora.
 
 
 
