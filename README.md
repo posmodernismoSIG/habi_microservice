@@ -112,17 +112,6 @@ SERVER_HOST=0.0.0.0
 SERVER_PORT=8000
 ```
 
-### Comandos de Desarrollo
-```bash
-# Instalar dependencias
-pip install -r requirements.txt
-
-# Ejecutar microservicio
-python main.py
-
-# Ejecutar tests
-python main.py test
-```
 
 ---
 ## 9. Query SQL 
@@ -150,4 +139,74 @@ adicionando a la Capsula WHERE los filtros adicionales
   AND s.name = %s
 
 ```
+---
+
+
+# Instalación y Configuración
+
+### Prerrequisitos
+
+- Python 3.8+
+- MySQL 5.7+
+- pip (gestor de paquetes de Python)
+
+### 1. Clonar el repositorio
+
+```bash
+git clone https://github.com/posmodernismoSIG/habi_microservice/
+cd habi_microservice
+```
+
+### 2. Crear entorno virtual (recomendado)
+
+```bash
+python -m venv venv
+source venv/bin/activate  
+```
+
+### 3. Instalar dependencias
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Configurar variables de entorno
+
+```bash
+# Editar .env con tus credenciales
+nano .env
+```
+
+Configurar las siguientes variables en `.env`:
+
+```env
+# Base de datos
+DB_HOST=tu_host_mysql
+DB_PORT=3306
+DB_USER=tu_usuario
+DB_PASSWORD=tu_contraseña
+DB_DATABASE=habi_db
+
+# Servidor
+SERVER_HOST=0.0.0.0
+SERVER_PORT=8000
+
+# Aplicación
+LOG_LEVEL=INFO
+ENVIRONMENT=development
+```
+
+### 5. Ejecutar el microservicio
+
+```bash
+python main.py
+```
+
+### 6. Ejecutar pruebas (opcional)
+
+```bash
+python main.py test
+```
+
+
 
