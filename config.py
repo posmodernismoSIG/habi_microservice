@@ -1,23 +1,25 @@
 '''
 Configuración del microservicio.
 '''
-
+import os
+from dotenv import load_dotenv
 import logging
-
+load_dotenv()
 
 class DatabaseConfig:
     '''Configuración de base de datos.'''
-    HOST = '13.58.82.14'
-    PORT = 3309
-    USER = 'pruebas'
-    PASSWORD = 'VGbt3Day5R'
-    DATABASE = 'habi_db'
+    HOST = os.getenv('DB_HOST')
+    PORT = int(os.getenv('DB_PORT'))
+    USER = os.getenv('DB_USER')
+    PASSWORD = os.getenv('DB_PASSWORD')
+    DATABASE = os.getenv('DB_DATABASE')
 
 
 class ServerConfig:
     '''Configuración del servidor HTTP.'''
-    HOST = '0.0.0.0'
-    PORT = 8000
+    HOST =  os.getenv('SERVER_HOST')
+    PORT =  int(os.getenv('SERVER_PORT'))
+    
 
 
 def setup_logging():
