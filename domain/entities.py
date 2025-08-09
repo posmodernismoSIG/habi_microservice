@@ -9,16 +9,18 @@ from typing import Optional, Dict, Any
 from .value_objects import PropertyState
 
 
-@dataclass
-class Property(frozen=True):
+@dataclass(frozen=True)
+class Property:
     '''entidad inmutable que representa una propiedad de la base de datos, es inmutable para garantizar la integiradad de los datos'''
     id: int
     address : str
     city : str
-    description : Optional[str] = None
-    year : Optional[int] = None
     price : int
     state : PropertyState
+    description : Optional[str] = None
+    year : Optional[int] = None
+    
+    
     
     def serializer(self) -> Dict[str,any]:
         '''Serializa los datos de la entidad (los convierte a Diccionarios o Json)'''

@@ -3,4 +3,4 @@
 from .entities import Property
 from .value_objects import PropertyState, PropertyFilter
 '''Exportacion de las clases'''
-__all__ = ('Property', 'PropertyState', 'PropertyFilter')
+__all__ = ['Property', 'PropertyState', 'PropertyFilter']

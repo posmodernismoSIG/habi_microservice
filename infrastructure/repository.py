@@ -5,7 +5,7 @@ from typing import List, Dict, Any
 import logging
 from mysql.connector import Error
 
-from domain import Property, PropertyFilter, PropertyStatus
+from domain import Property, PropertyFilter, PropertyState
 from .database import DatabaseConnect
 
 
@@ -107,7 +107,7 @@ class MySQLPropertyRepository(PropertyRepositoryInterface):
     def _map_to_property(self, row: Dict[str, Any]) -> Property:
         '''Mapea una fila de la BD a una entidad Property.'''
         try:
-            status = PropertyStatus(row['status_name'])
+            status = PropertyState(row['status_name'])
         except ValueError:
             # Manejo de inconsistencias en los datos
             logging.warning(f'Estado inválido encontrado: {row['status_name']} para propiedad {row['id']}')
